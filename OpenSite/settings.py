@@ -17,12 +17,20 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECURITY WARNING: don't run with debug turned on in production!
-SECRET_KEY = '@!zw2l8til1(0eb_nk+1w!(n78gqm&u)s)_v7#k6iseia@g9q0'
-DEBUG = True
+# The secret key lives outside the checkout, in a file only the service user
+# can read, so the (public) deployment branch carries no secret. The path can
+# be overridden for a manage.py run from elsewhere.
+with open(os.environ.get('OPENBENCH_SECRET_KEY_FILE', '/opt/openbench/secret_key')) as _f:
+    SECRET_KEY = _f.read().strip()
 
-ALLOWED_HOSTS = ['*']
+# DEBUG off: Django then serves no static files itself (the
+# staticfiles_urlpatterns() in OpenSite/urls.py is a no-op), so nginx serves
+# STATIC_ROOT at STATIC_URL in front of gunicorn. See Deploy/.
+DEBUG = False
+
+# LAN-bound: the container's address and its name. Requests arrive through
+# nginx, which forwards the Host header unchanged.
+ALLOWED_HOSTS = ['10.0.0.55', 'openbench', 'localhost', '127.0.0.1']
 
 HTML_MINIFY   = True
 APPEND_SLASH  = True
@@ -132,3 +140,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

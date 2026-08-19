@@ -1,0 +1,36 @@
+# OpenBench server: gunicorn serving OpenSite.wsgi on the loopback, behind
+# nginx (Deploy/nginx-openbench.conf), as the unprivileged `openbench` user.
+#
+#   install: cp Deploy/openbench.service /etc/systemd/system/
+#            systemctl daemon-reload && systemctl enable --now openbench
+#
+# WorkingDirectory matters: OpenBench/apps.py opens its PGN-watcher lockfile
+# by a relative path, and settings.py puts db.sqlite3 and Media/ under the
+# checkout. gunicorn handles SIGTERM gracefully, so `systemctl restart` lets
+# in-flight worker uploads finish.
+
+[Unit]
+Description=OpenBench (Django/gunicorn) for Cadence
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openbench
+Group=openbench
+WorkingDirectory=/opt/openbench/OpenBench
+Environment=OPENBENCH_SECRET_KEY_FILE=/opt/openbench/secret_key
+ExecStart=/opt/openbench/venv/bin/gunicorn OpenSite.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers 3 \
+    --timeout 120 \
+    --graceful-timeout 30 \
+    --access-logfile - \
+    --error-logfile -
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

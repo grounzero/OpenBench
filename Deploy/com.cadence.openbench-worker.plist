@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  OpenBench worker as a launchd user agent on the M5 Max.
+
+    install: cp Deploy/com.cadence.openbench-worker.plist ~/Library/LaunchAgents/
+             launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.cadence.openbench-worker.plist
+    stop:    launchctl bootout gui/$(id -u)/com.cadence.openbench-worker
+    log:     ~/Library/Logs/openbench-worker.log
+
+  PATH is seeded here as well as in the script it runs, because this is the
+  service definition and ~/.cargo/bin must be on PATH before the worker
+  reaches a build (see Deploy/worker-macos.sh). ProcessType Standard, not
+  Background: Background would have launchd throttle CPU and I/O for the
+  whole process tree, engines included.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cadence.openbench-worker</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>/Users/mg/git/OpenBench/Deploy/worker-macos.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/mg/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/mg/git/OpenBench/Client</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>ProcessType</key>
+    <string>Standard</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/mg/Library/Logs/openbench-worker.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/mg/Library/Logs/openbench-worker.log</string>
+</dict>
+</plist>
