@@ -26,8 +26,10 @@ export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/us
 . "$HOME/.config/openbench/worker.env"
 export OPENBENCH_USERNAME OPENBENCH_PASSWORD OPENBENCH_SERVER
 
+# -u: launchd's stdout is a file, so Python block-buffers it and the log
+# lags the worker by kilobytes. The log is the only view of a service.
 cd "$(dirname "$0")/../Client"
-exec ../venv/bin/python3 client.py \
+exec ../venv/bin/python3 -u client.py \
     -T "${OPENBENCH_THREADS:-12}" \
     -N 1 \
     -I "${OPENBENCH_IDENTITY:-m5max}"
