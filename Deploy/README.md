@@ -13,9 +13,11 @@ What differs from upstream, by file:
 - `Engines/Cadence.json` — private engine, source `grounzero/cadence`, built
   with `cargo` via the repo's root Makefile shim, on Linux and Darwin. Presets
   follow the engine's CLAUDE.md §5.1: STC 8+0.08 `[0, 5]`, LTC 40+0.4 `[0, 3]`,
-  non-regression `[-3, 1]`, α = β = 0.05. `nps` is the M5 Max's bench speed
-  measured as 12 concurrent copies (22.5 Mnps), so that worker plays at the
-  nominal time control; any other machine is scaled to it.
+  non-regression `[-3, 1]`, α = β = 0.05. `nps` is 28,000,000: the M5 Max's
+  bench speed measured as **6** concurrent copies, which is the concurrency
+  every SPRT runs at, and the only measurement of the four taken that is
+  stable (the two benches of a workload agree to 1.6%, against 19% at twelve
+  copies). Any other machine is scaled to it.
 - `OpenSite/settings.py` — `DEBUG = False`, secret key read from a file outside
   the checkout, `ALLOWED_HOSTS` for the LAN address, `STATIC_ROOT` for nginx.
 
@@ -53,6 +55,10 @@ install -m 600 <pat-file> ~/git/OpenBench/Client/credentials.cadence
 cp Deploy/com.cadence.openbench-worker.plist ~/Library/LaunchAgents/
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.cadence.openbench-worker.plist
 ```
+
+The worker runs **6** concurrent games, not more; `worker-macos.sh` says why,
+and the measurement behind it is in `docs/testing-infrastructure.md` in the
+Cadence repo.
 
 The worker needs `make`, `clang++` (Xcode CLT) and `cargo` on PATH; the plist
 and the script both seed `~/.cargo/bin`. Logs go to `~/Library/Logs/openbench-worker.log`.
