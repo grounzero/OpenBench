@@ -31,7 +31,11 @@ install -m 600 -o openbench -g openbench <pat-file> /opt/openbench/OpenBench/Con
 chown -R openbench:openbench /opt/openbench; chmod 600 /opt/openbench/secret_key
 sudo -u openbench /opt/openbench/venv/bin/python manage.py migrate
 sudo -u openbench /opt/openbench/venv/bin/python manage.py collectstatic --noinput
-# first user: manage.py shell -> User.objects.create_user(...); Profile(enabled=True, approver=True)
+# Two accounts, both needing a Profile row -- a superuser without one renders
+# "This is not a real OpenBench User" and cannot create tests:
+#   openbench : human login,  Profile(enabled=True,  approver=True)
+#   mg        : worker only,  Profile(enabled=True,  approver=False)
+# manage.py shell -> User.objects.create_user(...); Profile.objects.create(...)
 cp Deploy/openbench.service /etc/systemd/system/ && systemctl enable --now openbench
 cp Deploy/nginx-openbench.conf /etc/nginx/sites-available/openbench && ln -s ../sites-available/openbench /etc/nginx/sites-enabled/ && rm /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx
 ```
