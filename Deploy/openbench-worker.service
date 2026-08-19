@@ -1,0 +1,41 @@
+# OpenBench worker, Linux (systemd). Used on the N305 container.
+#
+#   install: cp Deploy/openbench-worker.service /etc/systemd/system/
+#            systemctl daemon-reload && systemctl enable --now openbench-worker
+#   log:     journalctl -u openbench-worker -f
+#
+# PATH is set explicitly, with ~/.cargo/bin first. systemd gives a unit a
+# minimal PATH that does not include it, and the OpenBench server does not
+# check that a worker has a compiler before assigning it a *private* engine --
+# it checks the token. A worker without cargo therefore does not decline the
+# job, it takes it and fails at build time. This line is that bug's fix.
+#
+# -T is not "auto" and not half the core count: it is whatever the bench
+# disagreement measurement says. On this box that is 4 (see the Cadence repo's
+# docs/testing-infrastructure.md). It comes from the environment file so that
+# the number can be changed without editing a checked-in unit.
+#
+# Restart=always because the client's own retry loop exits on some server-side
+# errors, and a worker that has quietly stopped playing is worse than one that
+# restarts.
+
+[Unit]
+Description=OpenBench worker for Cadence
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openbench
+Group=openbench
+WorkingDirectory=/home/openbench/OpenBench/Client
+Environment=PATH=/home/openbench/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=/home/openbench/.config/openbench/worker.env
+ExecStart=/home/openbench/OpenBench/venv/bin/python -u client.py -T ${OPENBENCH_THREADS} -N 1 -I ${OPENBENCH_IDENTITY}
+Restart=always
+RestartSec=15
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
