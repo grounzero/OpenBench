@@ -62,3 +62,37 @@ Cadence repo.
 
 The worker needs `make`, `clang++` (Xcode CLT) and `cargo` on PATH; the plist
 and the script both seed `~/.cargo/bin`. Logs go to `~/Library/Logs/openbench-worker.log`.
+
+## Worker (Linux, e.g. the N305 container)
+
+```
+useradd --create-home --home-dir /home/openbench --shell /bin/bash openbench
+runuser -u openbench -- sh -c 'curl -sSf https://sh.rustup.rs | sh -s -- -y     --no-modify-path --default-toolchain 1.97.1 --profile minimal'
+runuser -u openbench -- git clone -b cadence https://github.com/grounzero/OpenBench ~/OpenBench
+runuser -u openbench -- python3 -m venv ~/OpenBench/venv
+runuser -u openbench -- ~/OpenBench/venv/bin/pip install -r ~/OpenBench/Client/requirements.txt
+install -m 600 -o openbench -g openbench <pat-file> /home/openbench/OpenBench/Client/credentials.cadence
+# /home/openbench/.config/openbench/worker.env (mode 600): OPENBENCH_USERNAME= OPENBENCH_PASSWORD=
+#   OPENBENCH_SERVER=http://10.0.0.55/ OPENBENCH_THREADS=<measured> OPENBENCH_IDENTITY=<name>
+cp Deploy/openbench-worker.service /etc/systemd/system/ && systemctl enable --now openbench-worker
+```
+
+**Build `fastchess` by hand first, with bounded parallelism.** The client
+builds it with an unbounded `make -j`, which on a 6-core container with 4 GB
+means six `cc1plus` processes at ~310 MB each and an out-of-memory container
+whose systemd stops answering. Build it once with `make -j2`, copy the binary
+to `Client/fastchess-ob`, and the client finds and accepts it instead:
+
+```
+curl -sSL https://github.com/AndyGrant/fastchess/archive/refs/heads/master.zip -o fc.zip
+unzip -q fc.zip && cd fastchess-master && nice make -j2 CXX=g++
+cp fastchess ~/OpenBench/Client/fastchess-ob
+```
+
+**Pick `OPENBENCH_THREADS` by measurement, not by core count.** Run the engine's
+`bench` in N concurrent copies for a few values of N and look at the spread
+between copies: the node count is deterministic, so any disagreement is the
+machine giving concurrent games different speeds, which is what makes a pairing
+unfair. On the N305 the answer was 4 of 8 cores (0.1%, against 2.8% at five);
+on the Mac it was 6 of 18. The method and the numbers are in
+`docs/testing-infrastructure.md` in the Cadence repo.
