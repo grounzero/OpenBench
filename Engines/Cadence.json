@@ -1,6 +1,6 @@
 {
     "private" : true,
-    "nps"     : 28000000,
+    "nps"     : 13250000,
     "source"  : "https://github.com/grounzero/cadence",
 
     "build" : {
