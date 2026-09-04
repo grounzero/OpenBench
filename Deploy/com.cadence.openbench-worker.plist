@@ -13,6 +13,18 @@
   reaches a build (see Deploy/worker-macos.sh). ProcessType Standard, not
   Background: Background would have launchd throttle CPU and I/O for the
   whole process tree, engines included.
+
+  caffeinate wraps the worker so that the power assertion has the same
+  lifetime as the thing that needs it. Given a command, caffeinate holds the
+  assertion for exactly that command's run, so launchd creates it, KeepAlive
+  restores it after a crash, and `launchctl bootout` removes it; a hand-
+  started caffeinate does none of that and dies with the shell that made it.
+
+  -i prevents idle system sleep and is the clause that matters, because it
+  applies on battery, where `pmset -b sleep` is 1 minute and a test forfeits
+  its games. -s covers system sleep on AC as defence against `pmset -c sleep 0`
+  being changed. No -d: the display should still sleep, and it costs nothing
+  to let it.
 -->
 <plist version="1.0">
 <dict>
@@ -21,6 +33,9 @@
 
     <key>ProgramArguments</key>
     <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+        <string>-s</string>
         <string>/bin/sh</string>
         <string>/Users/mg/git/OpenBench/Deploy/worker-macos.sh</string>
     </array>
