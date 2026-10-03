@@ -876,11 +876,23 @@ def find_pgn_error(reason, command):
     return data[ii] + pgn
 
 
+# Each test's first bench on this worker, by test id. A later handout is benched while the
+# previous handout's games are still finishing, so it reads low and lengthens the clock.
+FIRST_BENCH = {}
+
 def determine_scale_factor(config, dev_name, base_name):
 
-    # Run the benchmarks and compute the scaling NPS value
-    dev_nps  = safe_run_benchmarks(config, 'dev' , dev_name )
-    base_nps = safe_run_benchmarks(config, 'base', base_name)
+    # Run the benchmarks once per test, and reuse them for every later handout of it
+    test_id = config.workload['test']['id']
+    if test_id in FIRST_BENCH:
+        dev_nps, base_nps = FIRST_BENCH[test_id]
+        print('\nReusing the first bench of test %s' % (test_id))
+        print('Speed for %s is %d' % (config.workload['test']['dev' ]['name'], dev_nps ))
+        print('Speed for %s is %d' % (config.workload['test']['base']['name'], base_nps))
+    else:
+        dev_nps  = safe_run_benchmarks(config, 'dev' , dev_name )
+        base_nps = safe_run_benchmarks(config, 'base', base_name)
+        FIRST_BENCH[test_id] = (dev_nps, base_nps)
     ServerReporter.report_nps(config, dev_nps, base_nps)
 
     dev_factor = base_factor = None
