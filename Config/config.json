@@ -1,7 +1,7 @@
 {
     "client_version"     : 49,
     "client_repo_url"    : "https://github.com/grounzero/OpenBench",
-    "client_repo_ref"    : "cadence",
+    "client_repo_ref"    : "e892b22a365d3fb30f94b84f247d0b8184481d55",
 
     "fastchess_min_version" : "1.8.1",
     "fastchess_repo_url"    : "https://github.com/AndyGrant/fastchess",
