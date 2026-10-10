@@ -2,8 +2,9 @@
 
 This branch is upstream OpenBench at `2b8949d` (client version 49) plus the
 configuration for a single private engine, Cadence, and the service files to
-run it. Nothing under `Client/` or `OpenBench/` is modified, so the worker
-code a machine downloads from this branch is byte-for-byte upstream's.
+run it. One upstream file is modified: `Client/worker.py` reuses each test's
+first bench for every later handout of that test (`determine_scale_factor`), so
+the worker code a machine downloads from this branch is not upstream's.
 
 What differs from upstream, by file:
 
@@ -12,7 +13,7 @@ What differs from upstream, by file:
   the client repo pointed at this fork and branch so workers fetch a pinned client.
 - `Engines/Cadence.json` — private engine, source `grounzero/cadence`, built
   with `cargo` via the repo's root Makefile shim, on Linux and Darwin. Presets
-  follow the engine's CLAUDE.md §5.1: STC 8+0.08 `[0, 5]`, LTC 40+0.4 `[0, 3]`,
+  follow the engine's testing rules: STC 8+0.08 `[0, 5]`, LTC 40+0.4 `[0, 3]`,
   non-regression `[-3, 1]`, α = β = 0.05. `nps` is 28,000,000: the M5 Max's
   bench speed measured as **6** concurrent copies, which is the concurrency
   every SPRT runs at, and the only measurement of the four taken that is
@@ -57,8 +58,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.cadence.openbench-wo
 ```
 
 The worker runs **6** concurrent games, not more; `worker-macos.sh` says why,
-and the measurement behind it is in `docs/testing-infrastructure.md` in the
-Cadence repo.
+and the measurement behind it is in the project's own records.
 
 The worker needs `make`, `clang++` (Xcode CLT) and `cargo` on PATH; the plist
 and the script both seed `~/.cargo/bin`. Logs go to `~/Library/Logs/openbench-worker.log`.
@@ -94,5 +94,5 @@ cp fastchess ~/OpenBench/Client/fastchess-ob
 between copies: the node count is deterministic, so any disagreement is the
 machine giving concurrent games different speeds, which is what makes a pairing
 unfair. On the N305 the answer was 4 of 8 cores (0.1%, against 2.8% at five);
-on the Mac it was 6 of 18. The method and the numbers are in
-`docs/testing-infrastructure.md` in the Cadence repo.
+on the Mac it was 6 of 18. The method and the numbers are in the project's
+own records.
